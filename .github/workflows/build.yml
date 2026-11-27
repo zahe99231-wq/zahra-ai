@@ -33,8 +33,11 @@ jobs:
 
       - name: Fix Kotlin compiler version
         run: |
-          sed -i 's/2.2.20/2.4.0/g' app_src/zahra-ai-android/build.gradle.kts
-          echo "Kotlin version updated:"
+          
+      - name: Fix Android and Kotlin versions
+        run: |
+          sed -i 's/8.13.0/8.13.2/g' app_src/zahra-ai-android/build.gradle.kts
+          sed -i 's/2.2.20/2.3.0/g' app_src/zahra-ai-android/build.gradle.kts
           cat app_src/zahra-ai-android/build.gradle.kts
 
       - name: Build ZAHRA debug APK
@@ -47,4 +50,5 @@ jobs:
           name: ZAHRA-debug-apk
           path: app_src/zahra-ai-android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          
           
