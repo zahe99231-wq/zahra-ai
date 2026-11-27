@@ -26,8 +26,8 @@ jobs:
         uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
-          accept-android-sdk-licenses: 'yes'
-          log-accepted-android-sdk-licenses: 'false'
+          accept-android-sdk-licenses: true
+          log-accepted-android-sdk-licenses: false
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -91,6 +91,7 @@ jobs:
       - name: Build ZAHRA APK
         working-directory: app_src/zahra-ai-android
         run: |
+          set -o pipefail
           gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
 
       - name: Upload build log
