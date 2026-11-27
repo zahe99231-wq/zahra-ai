@@ -30,9 +30,6 @@ jobs:
       - name: Extract ZAHRA source
         run: |
           unzip -q ZAHRA-AI-Android-v0.1-source.zip -d app_src
-
-      - name: Fix Kotlin compiler version
-        run: |
           
       - name: Fix Android and Kotlin versions
         run: |
