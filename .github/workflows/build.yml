@@ -1,5 +1,6 @@
 
 name: Build ZAHRA APK
+
 on:
   push:
   workflow_dispatch:
@@ -22,7 +23,11 @@ jobs:
           java-version: '17'
 
       - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+          accept-android-sdk-licenses: 'yes'
+          log-accepted-android-sdk-licenses: 'false'
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -30,37 +35,51 @@ jobs:
           gradle-version: '8.13'
 
       - name: Find and extract source ZIP
+        shell: bash
         run: |
-          set -e
-          COUNT=$(find . -maxdepth 1 -type f -name "ZAHRA*.zip" | wc -l)
-          if [ "$COUNT" -ne 1 ]; then
-            echo "ERROR: ZAHRA*.zip ki exact 1 file honi chahiye, mili: $COUNT"
+          set -euo pipefail
+
+          mapfile -t ZIPS < <(find . -maxdepth 1 -type f -name "ZAHRA*.zip")
+
+          if [ "${#ZIPS[@]}" -ne 1 ]; then
+            echo "ERROR: Exactly one ZAHRA*.zip file required."
+            echo "Found: ${#ZIPS[@]}"
             ls -lah
             exit 1
           fi
-          ZIP=$(find . -maxdepth 1 -type f -name "ZAHRA*.zip")
+
+          ZIP="${ZIPS[0]}"
           echo "Using ZIP: $ZIP"
+
           mkdir -p app_src
           unzip -q "$ZIP" -d app_src
+
           test -f app_src/zahra-ai-android/build.gradle.kts
           test -f app_src/zahra-ai-android/app/build.gradle.kts
 
       - name: Fix Android and Kotlin versions
         working-directory: app_src/zahra-ai-android
+        shell: bash
         run: |
+          set -euo pipefail
+
           sed -i 's/8.13.0/8.13.2/g' build.gradle.kts
           sed -i 's/2.2.20/2.4.21/g' build.gradle.kts
+
           sed -i '/kotlinOptions {/,/}/d' app/build.gradle.kts
-          printf '\nkotlin {\n    jvmToolchain(17)\n}\n' >> app/build.gradle.kts
+
+          if ! grep -q 'jvmToolchain(17)' app/build.gradle.kts; then
+            printf '\nkotlin {\n    jvmToolchain(17)\n}\n' >> app/build.gradle.kts
+          fi
 
           echo "----- ROOT BUILD FILE -----"
           cat build.gradle.kts
+
           echo "----- APP BUILD FILE -----"
           cat app/build.gradle.kts
 
       - name: Install Android SDK components
         run: |
-          yes | sdkmanager --licenses || true
           sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Verify Gradle project
@@ -72,7 +91,16 @@ jobs:
       - name: Build ZAHRA APK
         working-directory: app_src/zahra-ai-android
         run: |
-          gradle assembleDebug --no-daemon --stacktrace
+          gradle assembleDebug --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/build.log"
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ZAHRA-build-log
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Verify APK
         run: |
@@ -80,10 +108,11 @@ jobs:
           test -f "$APK"
           ls -lh "$APK"
 
-            - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
+      - name: Upload ZAHRA APK
+        uses: actions/upload-artifact@v4
         with:
-          packages: 'platform-tools'
-          accept-android-sdk-licenses: 'yes'
-          log-accepted-android-sdk-licenses: 'false'
+          name: ZAHRA-debug-apk
+          path: app_src/zahra-ai-android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 7
           
