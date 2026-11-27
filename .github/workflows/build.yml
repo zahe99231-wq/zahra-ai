@@ -1,6 +1,5 @@
 
 name: Build ZAHRA APK
-
 on:
   push:
   workflow_dispatch:
@@ -82,7 +81,7 @@ jobs:
           ls -lh "$APK"
 
       - name: Upload ZAHRA APK
-        uses: actions/upload-artifact@v4
+        uses: android-actions/setup-android@v4
         with:
           name: ZAHRA-debug-apk
           path: app_src/zahra-ai-android/app/build/outputs/apk/debug/app-debug.apk
